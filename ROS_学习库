@@ -1,0 +1,113 @@
+自定义服务通信
+package.xml中添加编译依赖与执行依赖
+--------------------------------------------
+ <build_depend>message_generation</build_depend>
+  <exec_depend>message_runtime</exec_depend>
+------------------------------------------------
+
+CMakeLists.txt编辑 srv 相关配置
+--------------------------------------------------
+14 message_generation
+58 add_service_files(
+59  FILES
+60  AddInts.srv
+61 )
+71 generate_messages(
+72  DEPENDENCIES
+73  std_msgs
+74 )
+--------------------------------------------------
+/src
+demo01_dever.cpp代码：
+---------------------------------------------
+#include"ros/ros.h"
+#include"plumbing_server_client/AddInts.h"
+
+
+//处理请求的回调函数
+bool doNums(plumbing_server_client::AddInts::Request &request,
+            plumbing_server_client::AddInts::Response &response)
+{
+    //请求
+    int num1=request.num1;
+    int num2=request.num2;
+    ROS_INFO("请求数据：num1=%d,num2=%d",num1,num2);
+
+    //响应
+    int sum = num1+num2;
+    response.sum = sum;
+    ROS_INFO("响应数据：sum=%d",sum);
+
+    if (num1 < 0 || num2 < 0)
+    {
+        ROS_ERROR("提交的数据异常:数据不可以为负数");
+        return false;
+    }
+
+    return true;
+}
+---------------------------------------------------------
+
+demo02_client.cpp代码：
+----------------------------------------------------------
+#include"ros/ros.h"
+#include"plumbing_server_client/AddInts.h"
+
+int main(int argc, char *argv[])
+{
+    setlocale(LC_ALL,"");
+    if(argc!=3)
+    {
+        ROS_INFO("提交参数个数不对");
+        return 1;
+    }
+
+    ros::init(argc,argv,"Client");
+    ros::NodeHandle nh;
+    ros::ServiceClient client =nh.serviceClient<plumbing_server_client::AddInts>("addInts");
+
+    plumbing_server_client::AddInts ai;
+    ai.request.num1=atoi(argv[1]);
+    ai.request.num2=atoi(argv[2]);
+    
+    //client.waitForExistence();   //判断服务器状态的函数
+    ros::service::waitForService("addInts"); //参数：服务话题；让客户端挂起，等待服务器启动
+
+    bool flag = client.call(ai);//客户端访问服务端
+    if(flag)
+    {
+        ROS_INFO("响应成功！！");
+        ROS_INFO("结果=%d",ai.response.sum);
+    }else {
+        ROS_INFO("处理失败....");
+    }
+    
+    return 0;
+}
+----------------------------------------------
+
+CMakeLists.txt配置
+------------------------------------------------
+137 add_executable(demo01_server src/demo01_server.cpp)
+138 add_executable(demo02_client src/demo02_client.cpp)
+
+149 add_dependencies(demo01_server ${PROJECT_NAME}_gencpp)
+150 add_dependencies(demo02_client ${PROJECT_NAME}_gencpp)
+
+153 target_link_libraries(demo01_server
+154  ${catkin_LIBRARIES}
+155 )
+156 target_link_libraries(demo02_client
+157  ${catkin_LIBRARIES}
+158 )
+------------------------------------------------
+
+/srv
+----------------------------------------------
+#请求数据
+int32 num1
+int32 num2
+---
+#响应数据
+int32 sum
+
