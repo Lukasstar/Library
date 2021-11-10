@@ -1,0 +1,123 @@
+
+src/demo01_pub.cpp
+----------------------------------------
+#include "ros/ros.h"
+#include "std_msgs/String.h" //ROS文本类型
+#include <sstream>
+
+int main(int argc, char *argv[])
+{
+    setlocale(LC_ALL,""); //输出中文时
+    ros::init(argc,argv,"Talker");
+    ros::NodeHandle nh;   //ROS节点
+    ros::Publisher pub=nh.advertise<std_msgs::String>("home",10);
+    std_msgs::String msg;
+    ros::Rate rate(10);   //发布频率10hz
+    int count =0;    //设置计数
+    while(ros::ok())  //ros节点还活着循环成立
+    {
+        count ++;
+        //字符串拼接数字
+        std::stringstream ss;
+        ss <<"hello -->" << count;
+        //msg.data="hello"
+        msg.data=ss.str();
+        pub.publish(msg);
+        //添加日志
+        ROS_INFO("发布数据为：%s",ss.str().c_str());
+
+        rate.sleep();
+        ros::spinOnce(); 
+    }
+
+    return 0;
+}
+------------------------------------------------------
+
+src/demo02_sub.cpp
+-----------------------------------------------------
+#include "ros/ros.h"
+#include "std_msgs/String.h" //ROS文本类型
+
+void doMsg(const std_msgs::String::ConstPtr &msg)
+{
+ ROS_INFO("Listener:%s",msg->data.c_str());
+}
+
+int main(int argc, char *argv[])
+{
+    setlocale(LC_ALL,""); //输出中文时
+    ros::init(argc,argv,"Listener");
+    ros::NodeHandle nh;   //ROS节点
+    ros::Subscriber sub =nh.subscribe("home",10,doMsg);
+    ros::spin(); //回头调用回调函数
+
+    
+    
+
+    return 0;
+}
+--------------------------------------------
+
+msg/Person.msg
+-------------------------------------
+string name
+int16 age
+float64 height
+-----------------------------------
+
+src/demo03_pub_Person.cpp
+---------------------------------
+#include"ros/ros.h"
+#include"plumbing_pub_sub/Person.h"  //包含Person.msg
+#include <sstream>
+
+int main(int argc, char *argv[])
+{
+    setlocale(LC_ALL,"");
+    ros::init(argc,argv,"custontalker");
+    ros::NodeHandle nh;
+    ros::Publisher pub = nh.advertise<plumbing_pub_sub::Person>("chat",100);
+    plumbing_pub_sub::Person person;
+    person.name ="lukas";
+    person.age =7;
+    person.height =1.99;
+    ros::Rate rate(1);
+    while (ros::ok())
+    {
+       
+       pub.publish(person);
+       ROS_INFO("我叫:%s,今年%d岁,高%.2f米", person.name.c_str(), person.age, person.height);
+       person.age += 1;
+       rate.sleep();
+       
+    }
+    
+
+    return 0;
+}
+----------------------------------
+
+src/demo04_sub_Person.cpp
+-----------------------------------
+#include"ros/ros.h"
+#include"plumbing_pub_sub/Person.h"
+#include <sstream>
+
+void domsgs(const plumbing_pub_sub::Person::ConstPtr &p)
+{
+    ROS_INFO("custonlistener:%s,age:%d,height:%.2f",p->name.c_str(),p->age,p->height);
+
+}
+
+int main(int argc, char *argv[])
+{
+    setlocale(LC_ALL,"");
+    ros::init(argc,argv,"custonlistener");
+    ros::NodeHandle nh;
+    ros::Subscriber sub=nh.subscribe<plumbing_pub_sub::Person>("chat",100,domsgs);
+    ros::spin();
+
+    return 0;
+}
+------------------------------------------
