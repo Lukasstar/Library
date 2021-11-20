@@ -1,0 +1,134 @@
+
+任务一：（话题发布）实现乌龟运动控制，让小乌龟做圆周运动
+test01_pub_twist.cpp
+-------------------------------------
+#include"ros/ros.h"
+#include"geometry_msgs/Twist.h"
+
+int main(int argc, char *argv[])
+{
+    ros::init(argc,argv,"my_control");//节点初始化
+    ros::NodeHandle nh;
+    ros::Publisher pub=nh.advertise<geometry_msgs::Twist>("/turtle1/cmd_vel",10);//发布对象，同一话题，缓存长度
+    ros::Rate rate(10);//发布频率
+    geometry_msgs::Twist twist;//被发布的消息
+    twist.linear.x=10.0;//前后移动速度m/s
+    twist.linear.y=0.0;//左右移动速度m/s
+    twist.linear.z=0.0;//上下移动速度m/s
+    twist.angular.x=0.0;//翻滚角速度rad/s
+    twist.angular.y=0.0;//俯仰角速度rad/s
+    twist.angular.z=5.0;//偏航角速度rad/s
+    //循环发布
+    while (ros::ok())
+    {
+        pub.publish(twist);
+        rate.sleep();
+        ros::spinOnce();
+    }
+    
+    return 0;
+}
+----------------------------------------
+
+任务二：（话题订阅）已知turtlesim中的乌龟显示节点，会发布当前乌龟的位姿(窗体中乌龟的坐标以及朝向)，要求控制乌龟运动，并时时打印当前乌龟的位姿。
+test02_sub_pose.cpp
+----------------------------------------
+#include"ros/ros.h"
+#include "turtlesim/Pose.h"
+
+void doPose(const turtlesim::Pose::ConstPtr &pose) //回调函数
+{
+    ROS_INFO("\n 乌龟位姿信息:\n 坐标:(%.2f,%.2f)\n 头朝向:(%.2f)\n 线速度:%.2f\n 角速度:%.2f\n",pose->x,pose->y,pose->theta,pose->linear_velocity,pose->angular_velocity);
+}
+
+int main(int argc, char  *argv[])
+{
+    setlocale(LC_ALL,"");
+    ros::init(argc,argv,"sub_pose");
+    ros::NodeHandle nh;
+    ros::Subscriber sub = nh.subscribe("/turtle1/pose",1,doPose);//订阅对象，同一话题，缓存大小，回调函数
+    ros::spin();
+    return 0;
+}
+------------------------------------------------
+
+任务三：（服务请求）实现向 turtlesim 发送请求，在乌龟显示节点的窗体指定位置生成一乌龟
+test03_service_client.cpp
+-------------------------------------------------
+#include"ros/ros.h"
+#include"turtlesim/Spawn.h"
+#include<string>
+using namespace std;
+
+    class SpawnClass
+    {
+    public:
+        double x;
+        double y;
+        double theta;
+        string name;
+    };
+
+int main(int argc, char *argv[])
+{
+    setlocale(LC_ALL,"");
+    ros::init(argc,argv,"service_call");
+    ros::NodeHandle nh;
+    ros::ServiceClient client = nh.serviceClient<turtlesim::Spawn>("/spawn");
+    //请求数据
+
+    SpawnClass Typeclass;
+    ROS_INFO("输入x:");cin >>Typeclass.x;
+    ROS_INFO("输入y:");cin >>Typeclass.y;
+    ROS_INFO("输入theta:");cin >>Typeclass.theta;
+    ROS_INFO("输入name:");cin >>Typeclass.name;
+    
+    turtlesim::Spawn spawn;
+    spawn.request.x=Typeclass.x;
+    spawn.request.y=Typeclass.y;
+    spawn.request.theta=Typeclass.theta;
+    spawn.request.name=Typeclass.name;
+    //发送请求
+    client.waitForExistence(); //判断服务器状态
+    bool flag = client.call(spawn); //接受响应状态，响应结果在spawn对象的response中
+    //处理响应
+    if(flag)
+    {
+        ROS_INFO("新乌龟生成！名字为：%s",spawn.response.name.c_str());
+    }else
+    {
+        ROS_INFO("请求失败！！");
+    }
+    return 0;
+}
+----------------------------------------------------
+
+任务四：（参数设置）三种方法修改turtlesim乌龟显示节点窗体的背景色，已知背景色是通过参数服务器的方式以 rgb 方式设置的。
+test04_param_background.cpp
+----------------------------------------------------
+#include"ros/ros.h"
+
+int main(int argc, char *argv[])
+{
+    setlocale(LC_ALL,"");
+    ros::init(argc,argv,"change_bgColor");
+    //第一种方法
+    // ros::param::set("/turtlesim/background_r",255);
+    // ros::param::set("/turtlesim/background_g",50);
+    // ros::param::set("/turtlesim/background_b",255);
+
+    //第二种方法
+    // ros::NodeHandle nh;
+    // nh.setParam("/turtlesim/background_r",0);
+    // nh.setParam("/turtlesim/background_g",0);
+    // nh.setParam("/turtlesim/background_b",0);
+
+    //第三种方法
+    ros::NodeHandle nh("turtlesim");
+    nh.setParam("background_r",0);
+    nh.setParam("background_g",50);
+    nh.setParam("background_b",100);
+
+    return 0;
+}
+---------------------------------------------------
