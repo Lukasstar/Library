@@ -1,0 +1,168 @@
+urdf/demo01_mycar.urdf
+----------------------------------------------
+<!--不同形状机器人部件-->
+<robot name="mycar">
+
+    <!--()解决底盘link下沉问题-->
+    <link name="base_footprint">
+        <visual>
+            <geometry>
+                <box size="0.001 0.001 0.001"/>
+            </geometry>    
+        </visual>
+    </link>
+
+    <!--连杆(底盘)-->
+    <link name="base_link">
+        <!--可视化-->
+        <visual>
+            <!--形状-->
+            <geometry>
+                <!--立方体-->
+                <box size="0.8 0.5 0.2"/>
+                <!-- <cylinder radius="5.7" length="9"/> -->
+                <!-- <sphere radius="0.5"/> -->
+                <!-- <mesh filename="package://urdf01_rviz/meshes/autolabor_mini.stl"/> -->
+            </geometry>
+            <!--偏移量与倾斜弧度-->
+                <!-- <origin xyz="0 0 0" rpy="1.57 0 1.57"/> -->
+                <origin xyz="0 0 0" rpy="0 0 0"/>
+            <!--颜色-->
+            <material name="car_color">
+                <color rgba="0 0.5 1 0.5"/>
+            </material>
+        </visual>
+    </link>
+
+    <!--关节 关联base_footprint与base_link-->
+    <joint name="footprinttobase" type="fixed">
+        <!--父级link-->
+        <parent link="base_footprint"/>
+        <!--子级link-->
+        <child link="base_link"/>
+        <!--偏移量(z=车体高度/2 +离地高度)-->
+        <origin xyz="0 0 0.115" rpy="0 0 0"/>
+    </joint>
+
+    <!--连杆（摄像头）-->
+    <link name="camera_link">
+        <!--可视化-->
+        <visual>
+            <!--形状-->
+            <geometry>
+                <!--立方体-->
+                <!-- <box size="0.09 0.07 0.05"/> -->
+                <cylinder radius="0.04" length="0.05"/>
+                <!-- <sphere radius="0.5"/> -->
+                <!-- <mesh filename="package://urdf01_rviz/meshes/autolabor_mini.stl"/> -->
+            </geometry>
+            <!--偏移量与倾斜弧度-->
+                <origin xyz="0 0 0" rpy="0 0 0"/>
+            <!--颜色-->
+            <material name="camera_color">
+                <color rgba="1 0.5 0 0.5"/>
+            </material>
+        </visual>
+    </link>
+
+    <!--关节 关联bse_link与camera_link-->
+    <joint name="cameratobase" type="continuous">
+        <!--父级link-->
+        <parent link="base_link"/>
+        <!--子级link-->
+        <child link="camera_link"/>
+        <!--偏移量-->
+        <origin xyz="0.36 0 0.125" rpy="0 0 0"/>
+        <!--围绕关节轴运动-->
+        <axis xyz="0 0 1"/>
+    </joint>
+    
+        <!--连杆（驱动轮 左）-->
+    <link name="left_wheel">
+        <!--可视化-->
+        <visual>
+            <!--形状-->
+            <geometry>
+                <!--立方体-->
+                <!-- <box size="0.09 0.07 0.05"/> -->
+                <cylinder radius="0.04" length="0.05"/>
+                <!-- <sphere radius="0.5"/> -->
+                <!-- <mesh filename="package://urdf01_rviz/meshes/autolabor_mini.stl"/> -->
+            </geometry>
+            <!--偏移量与倾斜弧度-->
+                <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+            <!--颜色-->
+            <material name="wheeel_color">
+                <color rgba="0 0 0 0.3"/>
+            </material>
+        </visual>
+    </link>
+
+    <!--关节 关联left_wheel与base_link-->
+    <joint name="lefttobase" type="continuous">
+        <!--父级link-->
+        <parent link="base_link"/>
+        <!--子级link-->
+        <child link="left_wheel"/>
+        <!--偏移量(y=底盘宽一半 z=车体高度/2 +离地高度-车轮半径)-->
+        <origin xyz="0 0.25 0.125" rpy="0 0 0"/>
+        <!--围绕关节轴运动-->
+        <axis xyz="0 1 0"/>
+    </joint>
+
+    <!--连杆（驱动轮 右）-->
+        <link name="right_wheel">
+        <!--可视化-->
+        <visual>
+            <!--形状-->
+            <geometry>
+                <!--立方体-->
+                <!-- <box size="0.09 0.07 0.05"/> -->
+                <cylinder radius="0.04" length="0.05"/>
+                <!-- <sphere radius="0.5"/> -->
+                <!-- <mesh filename="package://urdf01_rviz/meshes/autolabor_mini.stl"/> -->
+            </geometry>
+            <!--偏移量与倾斜弧度-->
+                <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+            <!--颜色-->
+            <material name="wheeel_color">
+                <color rgba="0 0 0 0.3"/>
+            </material>
+        </visual>
+    </link>
+
+    <!--关节 关联rightt_wheel与base_link-->
+    <joint name="righttobase" type="continuous">
+        <!--父级link-->
+        <parent link="base_link"/>
+        <!--子级link-->
+        <child link="right_wheel"/>
+        <!--偏移量(y=底盘宽一半;z=车体高度/2 +离地高度-车轮半径)-->
+        <origin xyz="0 -0.25 0.125" rpy="0 0 0"/>
+        <!--围绕关节轴运动-->
+        <axis xyz="0 1 0"/>
+    </joint>
+
+</robot>
+---------------------------------
+
+launch/demo01_maycae.launch
+---------------------------------
+<launch>
+
+    <!-- 参数服务器中设置（urdf）参数 -->
+    <param name="robot_description" textfile="$(find urdf01_rviz)/urdf/urdf/demo02_link.urdf" />
+
+    <!-- 启动 rviz -->
+    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find urdf01_rviz)/config/show_mycar.rviz" />
+
+    <!--rviz中显示URDF 必须发布不同部件间坐标系关系（ROS提供机器人模型显示的坐标发布相关节点）-->
+    <!--关节状态发布节点-->
+    <node pkg="joint_state_publisher" type="joint_state_publisher" name="joint_state_publisher"/>
+    <!--机器人状态发布节点-->
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher"/>
+    <!--控制关节运动的节点-->
+    <node pkg="joint_state_publisher_gui" type="joint_state_publisher_gui" name="joint_state_publisher_gui"/>
+
+</launch>
+---------------------------------------------
